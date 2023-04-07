@@ -7,22 +7,27 @@ namespace RayTracer;
 using Shapes;
 
 using static Constants;
+using static Utils.VectorUtils;
 
 public class RayTracer
 {
-    private const int BytesPerColor = 3; // Color in buffer shall be stored as RGB
-
-    private const float AspectRatio = 16.0f / 9.0f;
-
     public static void Main(string[] args)
     {
-        var width  = 400;
-        var height = (int)(width / AspectRatio);
+        var aspectRatio = 16.0f / 9.0f;
+        var width       = 400;
+        var height      = (int)(width / aspectRatio);
 
-        var buffer = new byte[width * height * BytesPerColor];
+        var colorBuffer = new ColorBuffer(width, height);
+
+        var samplesPerPixel    = 100;
+        var invSamplesPerPixel = 1 / (float)samplesPerPixel;
+
+        var depth = 10;
+
+        var random = new Random();
 
         var viewportHeight = 2.0f;
-        var viewportWidth  = AspectRatio * viewportHeight;
+        var viewportWidth  = aspectRatio * viewportHeight;
         var focalLength    = 1.0f;
         var origin         = new Vector3(0, 0, 0);
         var lookDirection  = new Vector3(0, 0, -1);
@@ -41,40 +46,51 @@ public class RayTracer
                                                                radius: 100.0f)
                                         });
 
-        for (var y = 0; y < height; y++)
+        for (var y = 0; y < colorBuffer.Height; y++)
         {
             Console.WriteLine($"Scanlines processed: {y} / {height}");
 
-            for (var x = 0; x < width; x++)
+            for (var x = 0; x < colorBuffer.Width; x++)
             {
-                var u = (float)x / (width - 1);
-                var v = (float)y / (height - 1);
+                var rayColor = new Vector3();
 
-                var rayTarget = camera.BotLeftViewport
-                                + u * camera.ViewportWidth * camera.CameraRight
-                                + v * camera.ViewportHeight * camera.CameraUp;
+                for (var sample = 0; sample < samplesPerPixel; sample++)
+                {
+                    var u = (float)(x + random.NextDouble()) / colorBuffer.Width;
+                    var v = (float)(y + random.NextDouble()) / colorBuffer.Height;
 
-                var rayDirection = rayTarget - camera.Origin;
+                    var ray = camera.GetRay(u, v);
 
-                var ray = new Ray(camera.Origin, rayDirection);
+                    rayColor += GetRayColor(ray, world, depth);
+                }
 
-                var rayColor = GetRayColor(ray, world);
+                rayColor *= invSamplesPerPixel;
 
-                var bufferIndex = BytesPerColor * (y * width + x);
-
-                buffer[bufferIndex]     = (byte)(rayColor.X * 255);
-                buffer[bufferIndex + 1] = (byte)(rayColor.Y * 255);
-                buffer[bufferIndex + 2] = (byte)(rayColor.Z * 255);
+                colorBuffer.WriteColorToBuffer(rayColor, x, y);
 
                 #region Local Methods
 
-                Vector3 GetRayColor(Ray ray, ShapeCollection shapeCollection)
+                Vector3 GetRayColor(Ray ray, ShapeCollection shapeCollection, int depth)
                 {
-                    if (world.Hit(ray, MinimumRoot, MaximumRoot, out var hitRecord))
+                    if (depth <= 0)
                     {
-                        var normal = hitRecord?.Normal ?? throw new ArgumentException("Normal shall not be null if there is an intersection.");
+                        return Vector3.Zero;
+                    }
 
-                        return 0.5f * (normal + new Vector3(1, 1, 1));
+                    if (shapeCollection.Hit(ray, MinimumRoot, MaximumRoot, out var hitRecord))
+                    {
+                        if (hitRecord is null)
+                        {
+                            throw new ArgumentException("Hit record shall not be null if there is a hit detected.");
+                        }
+
+                        var diffuseTarget = RandomInUnitSphere(random);
+
+                        diffuseTarget *= Vector3.Dot(diffuseTarget, hitRecord.Value.Normal) >= 0 ? 1 : -1;
+
+                        var target = hitRecord.Value.Point + hitRecord.Value.Normal + diffuseTarget;
+
+                        return 0.5f * GetRayColor(new Ray(hitRecord.Value.Point, target - hitRecord.Value.Point), shapeCollection, depth - 1);
                     }
 
                     var mod = 0.5f * (ray.Direction.Y + 1.0f);
@@ -86,33 +102,24 @@ public class RayTracer
             }
         }
 
-        var bitmap = CreateBitmap(width, height, buffer);
+        var bitmap = CreateBitmap(colorBuffer);
 
         bitmap.Save("raytracer.jpg");
     }
 
-    private static Bitmap CreateBitmap(int width, int height, byte[] buffer)
+    private static Bitmap CreateBitmap(ColorBuffer colorBuffer)
     {
-        if (buffer.Length != width * height * BytesPerColor)
-        {
-            throw new ArgumentException("Length of buffer does not match picture size.");
-        }
+        var bitmap = new Bitmap(colorBuffer.Width, colorBuffer.Height, PixelFormat.Format32bppRgb);
 
-        var bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
-
-        for (var y = 0; y < height; y++)
+        for (var y = 0; y < colorBuffer.Height; y++)
         {
-            for (var x = 0; x < width; x++)
+            for (var x = 0; x < colorBuffer.Width; x++)
             {
-                var bufferIndex = BytesPerColor * (y * width + x);
-
-                var color = Color.FromArgb(buffer[bufferIndex],
-                                           buffer[bufferIndex + 1],
-                                           buffer[bufferIndex + 2]);
+                var color = colorBuffer.ReadColorFromBuffer(x, y);
 
                 // Camera viewport uses uv coordiantes where 0,0 is bottom left
                 // The y coordinate must be inversed as 0,0 is the top left for Bitmap
-                bitmap.SetPixel(x, height - 1 - y, color);
+                bitmap.SetPixel(x, colorBuffer.Height - 1 - y, color);
             }
         }
 

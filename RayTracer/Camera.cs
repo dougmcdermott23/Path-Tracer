@@ -49,4 +49,23 @@ public class Camera
         CameraRight   = Vector3.Normalize(CameraRight);
         CameraUp      = Vector3.Normalize(CameraUp);
     }
+
+    /// <summary>
+    ///
+    ///     Return a ray starting at the camera orgin towards the u, v coordinate on the viewport.
+    ///
+    /// </summary>
+    ///
+    /// <param name="u">Horizontal coordinate on viewport between 0 and 1</param>
+    /// <param name="v">Vertical coordinate on viewport between 0 and 1</param>
+    ///
+    /// <returns>Ray at origin passing through u, v on viewport</returns>
+    public Ray GetRay(float u, float v)
+    {
+        var rayTarget = BotLeftViewport + u * ViewportWidth * CameraRight + v * ViewportHeight * CameraUp;
+
+        var rayDirection = rayTarget - Origin;
+
+        return new(Origin, rayDirection);
+    }
 }

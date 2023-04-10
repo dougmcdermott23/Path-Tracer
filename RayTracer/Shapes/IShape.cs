@@ -2,8 +2,17 @@
 
 namespace RayTracer.Shapes;
 
+using Material;
+
 public interface IShape
 {
+    /// <summary>
+    ///
+    ///     Material associated with the current shape.
+    ///
+    /// </summary>
+    public Material Material { get; set; }
+
     /// <summary>
     ///
     ///     Calculates if a given ray intersects with the shape.

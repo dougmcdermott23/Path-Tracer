@@ -2,6 +2,8 @@
 
 namespace RayTracer.Shapes;
 
+using Material;
+
 public struct HitRecord
 {
     /// <summary>
@@ -31,4 +33,11 @@ public struct HitRecord
     ///
     /// </summary>
     public bool FrontFace { get; init; }
+
+    /// <summary>
+    ///
+    ///     Material associated with the shape.
+    ///
+    /// </summary>
+    public Material Material { get; init; }
 }

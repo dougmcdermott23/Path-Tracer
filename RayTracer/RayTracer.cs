@@ -19,10 +19,9 @@ public class RayTracer
 
         var colorBuffer = new ColorBuffer(width, height);
 
-        var samplesPerPixel    = 100;
-        var invSamplesPerPixel = 1 / (float)samplesPerPixel;
+        var samplesPerPixel = 100;
 
-        var depth = 10;
+        var maxDepth = 5;
 
         var random = new Random();
 
@@ -40,10 +39,49 @@ public class RayTracer
 
         var world = new ShapeCollection(new()
                                         {
-                                            new Sphere(center: new(0, 0, -1),
-                                                               radius: 0.5f),
-                                            new Sphere(center: new(0, -100.5f, -1),
-                                                               radius: 100.0f)
+                                            new Sphere(material: new()
+                                                                 {
+                                                                     MaterialColor = new Vector3(1.0f, 1.0f, 1.0f)
+                                                                 },
+                                                       center:   new(-2.2f, 0, -1.5f),
+                                                       radius:   0.5f),
+                                            new Sphere(material: new()
+                                                                 {
+                                                                     MaterialColor = new Vector3(1.0f, 0.1f, 0.1f)
+                                                                 },
+                                                       center:   new(-1.1f, 0, -1.5f),
+                                                       radius:   0.5f),
+                                            new Sphere(material: new()
+                                                                 {
+                                                                     MaterialColor = new Vector3(0.1f, 1.0f, 0.1f)
+                                                                 },
+                                                       center:   new(0, 0, -1.5f),
+                                                       radius:   0.5f),
+                                            new Sphere(material: new()
+                                                                 {
+                                                                     MaterialColor = new Vector3(0.1f, 0.1f, 1.0f)
+                                                                 },
+                                                       center:   new(1.1f, 0, -1.5f),
+                                                       radius:   0.5f),
+                                            new Sphere(material: new()
+                                                                 {
+                                                                     MaterialColor = new Vector3(1.0f, 1.0f, 1.0f)
+                                                                 },
+                                                       center:   new(2.2f, 0, -1.5f),
+                                                       radius:   0.5f),
+                                            new Sphere(material: new()
+                                                                 {
+                                                                     MaterialColor = new Vector3(0.95f, 0.95f, 0.95f)
+                                                                 },
+                                                       center:   new(0, -100.5f, -1.0f),
+                                                       radius:   100.0f),
+                                            new Sphere(material: new()
+                                                                 {
+                                                                     EmissionColor    = Vector3.One,
+                                                                     EmissionStrength = 2.0f
+                                                                 },
+                                                       center:   new(0, 12.0f, 15.0f),
+                                                       radius:   10.0f),
                                         });
 
         for (var y = 0; y < colorBuffer.Height; y++)
@@ -52,7 +90,7 @@ public class RayTracer
 
             for (var x = 0; x < colorBuffer.Width; x++)
             {
-                var rayColor = new Vector3();
+                var pixelColor = new Vector3();
 
                 for (var sample = 0; sample < samplesPerPixel; sample++)
                 {
@@ -61,50 +99,67 @@ public class RayTracer
 
                     var ray = camera.GetRay(u, v);
 
-                    rayColor += GetRayColor(ray, world, depth);
+                    var rayColor      = Vector3.One;
+                    var incomingLight = Vector3.Zero;
+
+                    TraceRay(random,
+                             ray,
+                             world,
+                             maxDepth,
+                             ref rayColor,
+                             ref incomingLight);
+
+                    pixelColor += incomingLight;
                 }
 
-                rayColor *= invSamplesPerPixel;
+                pixelColor /= samplesPerPixel;
 
-                colorBuffer.WriteColorToBuffer(rayColor, x, y);
+                pixelColor = Vector3.Clamp(pixelColor, Vector3.Zero, Vector3.One);
 
-                #region Local Methods
-
-                Vector3 GetRayColor(Ray ray, ShapeCollection shapeCollection, int depth)
-                {
-                    if (depth <= 0)
-                    {
-                        return Vector3.Zero;
-                    }
-
-                    if (shapeCollection.Hit(ray, MinimumRoot, MaximumRoot, out var hitRecord))
-                    {
-                        if (hitRecord is null)
-                        {
-                            throw new ArgumentException("Hit record shall not be null if there is a hit detected.");
-                        }
-
-                        var diffuseTarget = RandomInUnitSphere(random);
-
-                        diffuseTarget *= Vector3.Dot(diffuseTarget, hitRecord.Value.Normal) >= 0 ? 1 : -1;
-
-                        var target = hitRecord.Value.Point + hitRecord.Value.Normal + diffuseTarget;
-
-                        return 0.5f * GetRayColor(new Ray(hitRecord.Value.Point, target - hitRecord.Value.Point), shapeCollection, depth - 1);
-                    }
-
-                    var mod = 0.5f * (ray.Direction.Y + 1.0f);
-
-                    return (1.0f - mod) * new Vector3(1.0f, 1.0f, 1.0f) + mod * new Vector3(0.5f, 0.7f, 1.0f);
-                }
-
-                #endregion
+                colorBuffer.WriteColorToBuffer(pixelColor, x, y);
             }
         }
 
         var bitmap = CreateBitmap(colorBuffer);
 
         bitmap.Save("raytracer.jpg");
+    }
+
+    private static void TraceRay(Random random,
+                                 Ray ray,
+                                 ShapeCollection shapeCollection,
+                                 int currentDepth,
+                                 ref Vector3 rayColor,
+                                 ref Vector3 incomingLight)
+    {
+        if (currentDepth <= 0)
+        {
+            return;
+        }
+
+        if (!shapeCollection.Hit(ray, MinimumRoot, MaximumRoot, out var hitRecord))
+        {
+            return;
+        }
+
+        if (hitRecord is null)
+        {
+            throw new ArgumentException("Hit record shall not be null if there is a hit detected.");
+        }
+
+        var target = hitRecord.Value.Point + hitRecord.Value.Normal + RandomInUnitHemisphere(random, hitRecord.Value.Normal);
+
+        var emittedLight = hitRecord.Value.Material.EmissionColor * hitRecord.Value.Material.EmissionStrength;
+
+        incomingLight += emittedLight * rayColor;
+        rayColor      *= hitRecord.Value.Material.MaterialColor;
+
+        TraceRay(random,
+                 new Ray(hitRecord.Value.Point, target - hitRecord.Value.Point),
+                 shapeCollection,
+                 currentDepth - 1,
+                 ref rayColor,
+                 ref incomingLight);
     }
 
     private static Bitmap CreateBitmap(ColorBuffer colorBuffer)

@@ -1,19 +1,39 @@
-﻿using System.Drawing;
-using System.Net.WebSockets;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace RayTracer.Shapes;
 
+using Material;
+
 public class Sphere : IShape
 {
+    /// <summary>
+    ///
+    ///     Material associated with the sphere.
+    ///
+    /// </summary>
+    public Material Material { get; set; }
+
+    /// <summary>
+    ///
+    ///     Center point of the sphere.
+    ///
+    /// </summary>
     public Vector3 Center { get; set; }
 
+    /// <summary>
+    ///
+    ///     Radius of the sphere.
+    ///
+    /// </summary>
     public float Radius { get; set; }
 
-    public Sphere(Vector3 center, float radius)
+    public Sphere(Material material,
+                  Vector3 center,
+                  float radius)
     {
-        Center = center;
-        Radius = radius;
+        Material = material;
+        Center   = center;
+        Radius   = radius;
     }
 
     /// <summary>
@@ -82,6 +102,7 @@ public class Sphere : IShape
                         Normal    = frontFace ? normal : -normal,
                         Root      = root,
                         FrontFace = frontFace,
+                        Material  = Material
                     };
 
         return true;

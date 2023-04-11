@@ -6,7 +6,8 @@ using System.Numerics;
 namespace RayTracer;
 
 using Shapes;
-
+using System.Drawing.Text;
+using System.Net.WebSockets;
 using static Constants;
 using static Utils.VectorUtils;
 
@@ -67,67 +68,84 @@ public class RayTracer
     /// <exception cref="TaskCanceledException">Ray tracer was cancelled before all pixels were processed</exception>
     public void Run()
     {
-        for (var y = 0; y < ColorBuffer.Height; y++)
+        foreach (var coord in EnumerateImagePlane())
         {
-            for (var x = 0; x < ColorBuffer.Width; x++)
+            var startTask   = new ManualResetEvent(false);
+            var taskStarted = new ManualResetEvent(false);
+
+            WaitHandle.WaitAny(WaitHandles);
+
+            if (!CancellationTokenSource.IsCancellationRequested)
             {
-                var startTask = new ManualResetEvent(false);
-                var taskStarted = new ManualResetEvent(false);
+                var task = Task.Run(() =>
+                                    {
+                                        startTask.WaitOne();
+                                        taskStarted.Set();
 
-                WaitHandle.WaitAny(WaitHandles);
-
-                if (!CancellationTokenSource.IsCancellationRequested)
-                {
-                    var task = Task.Run(() =>
+                                        try
                                         {
-                                            startTask.WaitOne();
+                                            ProcessPixel(coord.X, coord.Y);
+                                            LogProgress();
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            CancellationTokenSource.Cancel();
                                             taskStarted.Set();
 
-                                            try
-                                            {
-                                                ProcessPixel(x, y);
-                                                LogProgress();
-                                            }
-                                            catch (Exception e)
-                                            {
-                                                CancellationTokenSource.Cancel();
-                                                taskStarted.Set();
+                                            Console.WriteLine(e);
+                                        }
+                                        finally
+                                        {
+                                            Semaphore.Release();
+                                            taskStarted.Set();
+                                        }
+                                    },
+                                    CancellationTokenSource.Token);
 
-                                                Console.WriteLine(e);
-                                            }
-                                            finally
-                                            {
-                                                Semaphore.Release();
-                                                taskStarted.Set();
-                                            }
-                                        },
-                                        CancellationTokenSource.Token);
+                task.ContinueWith(t => TaskList.Remove(t));
 
-                    task.ContinueWith(t => TaskList.Remove(t));
-
-                    TaskList.Add(task);
-                    startTask.Set();
-                    taskStarted.WaitOne();
-                }
-                else
-                {
-                    throw new TaskCanceledException("All tasks are cancelled due to a cancellation token request.");
-                }
+                TaskList.Add(task);
+                startTask.Set();
+                taskStarted.WaitOne();
+            }
+            else
+            {
+                throw new TaskCanceledException("All tasks are cancelled due to a cancellation token request.");
             }
         }
 
-        try
-        {
-            Task.WaitAll(TaskList.ToList().Where(t => t is not null).ToArray());
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
+        WaitForAllTasks();
 
         var bitmap = CreateBitmap();
 
         bitmap.Save("raytracer.jpg");
+
+        #region Local Methods
+
+        IEnumerable<(int X, int Y)> EnumerateImagePlane()
+        {
+            for (var y = 0; y < ColorBuffer.Height; y++)
+            {
+                for (var x = 0; x < ColorBuffer.Width; x++)
+                {
+                    yield return (x, y);
+                }
+            }
+        }
+
+        void WaitForAllTasks()
+        {
+            try
+            {
+                Task.WaitAll(TaskList.ToList().Where(t => t is not null).ToArray());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+
+        #endregion
     }
 
     private void ProcessPixel(int x, int y)

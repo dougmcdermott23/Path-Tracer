@@ -9,7 +9,7 @@ public class Program
     public static void Main(string[] args)
     {
         var aspectRatio = 16.0f / 9.0f;
-        var width       = 1920;
+        var width       = 400;
         var height      = (int)(width / aspectRatio);
 
         var colorBuffer = new ColorBuffer(width, height);
@@ -77,7 +77,7 @@ public class Program
 
         var maxDepth = 5;
 
-        var samplesPerPixel = 1_000;
+        var samplesPerPixel = 100;
 
         var rayTracer = new RayTracer(camera,
                                       colorBuffer,

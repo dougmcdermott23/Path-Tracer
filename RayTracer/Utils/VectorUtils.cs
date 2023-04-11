@@ -10,6 +10,20 @@ public static class VectorUtils
     /// <summary>
     ///
     ///     Randomly select a point in the unit hemisphere along a normal vector.
+    ///     Point follows the cosine weighted distribution.
+    ///
+    /// </summary>
+    ///
+    /// <param name="random">Random number generator</param>
+    /// <param name="normal">Unit vector to define hemisphere</param>
+    ///
+    /// <returns>A point in the unit hemisphere</returns>
+    public static Vector3 CosineWeightedDistribution(Random random, Vector3 normal)
+        => Vector3.Normalize(normal + RandomInUnitSphere(random));
+
+    /// <summary>
+    ///
+    ///     Randomly select a point in the unit hemisphere along a normal vector.
     ///
     /// </summary>
     ///

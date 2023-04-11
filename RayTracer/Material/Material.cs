@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Numerics;
 
 namespace RayTracer.Material;
 
@@ -10,6 +11,14 @@ public struct Material
     ///
     /// </summary>
     public Vector3 MaterialColor { get; init; }
+
+    /// <summary>
+    ///
+    ///     Controls the proportion of the reflection that is diffuse vs specular. An object with smoothness 1.0f is a perfect mirror.
+    ///
+    /// </summary>
+    [Range(0.0f, 1.0f)]
+    public float Smoothness { get; init; }
 
     /// <summary>
     ///

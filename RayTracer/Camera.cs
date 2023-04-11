@@ -40,7 +40,7 @@ public class Camera
         ViewportWidth  = viewportWidth;
         FocalLength    = focalLength;
         Origin         = origin;
-        LookDirection  = lookDirection;
+        LookDirection  = Vector3.Normalize(lookDirection);
 
         CameraRight = Vector3.Cross(lookDirection, Vector3.UnitY);
         CameraUp    = Vector3.Cross(CameraRight, lookDirection);

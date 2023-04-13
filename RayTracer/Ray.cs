@@ -2,7 +2,7 @@
 
 namespace RayTracer;
 
-public class Ray
+public struct Ray
 {
     public Vector3 Origin { get; }
 

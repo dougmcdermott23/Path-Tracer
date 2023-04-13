@@ -14,6 +14,20 @@ public struct Material
 
     /// <summary>
     ///
+    ///     Controls the probability the specular component will be taken into account when calculating the new ray direction.
+    ///
+    /// </summary>
+    public Vector3 SpecularColor { get; init; }
+
+    /// <summary>
+    ///
+    ///     Emission color of the material. If emission color is Vector3.Zero it does not emit any light.
+    ///
+    /// </summary>
+    public Vector3 EmissionColor { get; init; }
+
+    /// <summary>
+    ///
     ///     Controls the proportion of the reflection that is diffuse vs specular. An object with smoothness 1.0f is a perfect mirror.
     ///
     /// </summary>
@@ -22,10 +36,11 @@ public struct Material
 
     /// <summary>
     ///
-    ///     Emission color of the material. If emission color is Vector3.Zero it does not emit any light.
+    ///     Controls the probability the specular component will be taken into account when calculating the new ray direction.
     ///
     /// </summary>
-    public Vector3 EmissionColor { get; init; }
+    [Range(0.0f, 1.0f)]
+    public float SpecularProbability { get; init; }
 
     /// <summary>
     ///

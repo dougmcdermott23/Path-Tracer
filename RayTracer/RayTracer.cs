@@ -1,14 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Imaging;
 using System.Numerics;
 
 namespace RayTracer;
 
 using Shapes;
-using System.Drawing.Text;
-using System.Net.WebSockets;
 using static Constants;
+using static Utils.MathDM;
 using static Utils.VectorUtils;
 
 public class RayTracer
@@ -22,8 +20,6 @@ public class RayTracer
     private int MaxDepth { get; }
 
     private int SamplesPerPixel { get; }
-
-    private Random Random { get; } = new();
 
     private int ConcurrencyLimit { get; }
 
@@ -152,10 +148,12 @@ public class RayTracer
     {
         var pixelColor = new Vector3();
 
+        var state = (uint)(y * ColorBuffer.Width + x);
+
         for (var sample = 0; sample < SamplesPerPixel; sample++)
         {
-            var u = (float)(x + Random.NextDouble()) / ColorBuffer.Width;
-            var v = (float)(y + Random.NextDouble()) / ColorBuffer.Height;
+            var u = (float)(x + RandomValue(ref state)) / ColorBuffer.Width;
+            var v = (float)(y + RandomValue(ref state)) / ColorBuffer.Height;
 
             var ray = Camera.GetRay(u, v);
 
@@ -165,6 +163,7 @@ public class RayTracer
             TraceRay(ray,
                      World,
                      MaxDepth,
+                     ref state,
                      ref rayColor,
                      ref incomingLight);
 
@@ -181,6 +180,7 @@ public class RayTracer
     private void TraceRay(Ray ray,
                           ShapeCollection shapeCollection,
                           int currentDepth,
+                          ref uint state,
                           ref Vector3 rayColor,
                           ref Vector3 incomingLight)
     {
@@ -189,29 +189,34 @@ public class RayTracer
             return;
         }
 
-        if (!shapeCollection.Hit(ray, MinimumRoot, MaximumRoot, out var hitRecord))
+        if (!shapeCollection.TryGetFirstHit(ray,
+                                            MinimumRoot,
+                                            MaximumRoot,
+                                            out var hitRecord))
         {
             return;
         }
 
-        if (hitRecord is null)
-        {
-            throw new ArgumentException("Hit record shall not be null if there is a hit detected.");
-        }
+        var diffuseTarget  = hitRecord.Normal + CosineWeightedDistribution(ref state, hitRecord.Normal);
+        var specularTarget = Vector3.Reflect(ray.Direction, hitRecord.Normal);
 
-        var diffuseTarget  = hitRecord.Value.Normal + CosineWeightedDistribution(Random, hitRecord.Value.Normal);
-        var specularTarget = Vector3.Reflect(ray.Direction, hitRecord.Value.Normal);
+        var isSpecularBounce = hitRecord.Material.SpecularProbability >= RandomValue(ref state);
 
-        var target = Vector3.Lerp(diffuseTarget, specularTarget, hitRecord.Value.Material.Smoothness);
+        var target = Vector3.Lerp(diffuseTarget,
+                                  specularTarget,
+                                  isSpecularBounce ? hitRecord.Material.Smoothness : 0);
 
-        var emittedLight = hitRecord.Value.Material.EmissionColor * hitRecord.Value.Material.EmissionStrength;
+        var emittedLight = hitRecord.Material.EmissionColor * hitRecord.Material.EmissionStrength;
 
         incomingLight += emittedLight * rayColor;
-        rayColor      *= hitRecord.Value.Material.MaterialColor;
+        rayColor      *= Vector3.Lerp(hitRecord.Material.MaterialColor,
+                                      hitRecord.Material.SpecularColor,
+                                      isSpecularBounce ? 1 : 0);
 
-        TraceRay(new Ray(hitRecord.Value.Point, target),
+        TraceRay(new Ray(hitRecord.Point, target),
                  shapeCollection,
                  currentDepth - 1,
+                 ref state,
                  ref rayColor,
                  ref incomingLight);
     }

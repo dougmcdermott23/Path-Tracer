@@ -1,12 +1,10 @@
 ﻿namespace RayTracer.Shapes;
 
+using static Constants;
+
 public class ShapeCollection
 {
-    public List<IShape> ShapeList { get; set; } = new();
-
-    public ShapeCollection()
-    {
-    }
+    private List<IShape> ShapeList { get; set; } = new();
 
     public ShapeCollection(List<IShape> shapeList)
         => ShapeList = shapeList;
@@ -25,22 +23,22 @@ public class ShapeCollection
     /// <returns>If the ray intersects with a shape in the shape list</returns>
     ///
     /// <exception cref="ArgumentException">Thrown if a hit was detected but no hit record was initialized</exception>
-    public bool Hit(Ray ray,
-                    double rootMin,
-                    double rootMax,
-                    out HitRecord? hitRecord)
+    public bool TryGetFirstHit(Ray ray,
+                               double rootMin,
+                               double rootMax,
+                               out HitRecord hitRecord)
     {
         var hitDetected = false;
         var closestHit  = rootMax;
 
-        hitRecord = null;
+        hitRecord = EmptyHitRecord;
 
         foreach (var shape in ShapeList)
         {
             if (shape.Hit(ray, rootMin, closestHit, out var shapeHitRecord))
             {
                 hitDetected = true;
-                closestHit  = shapeHitRecord?.Root ?? throw new ArgumentException("Normal shall not be null if there is an intersection.");
+                closestHit  = shapeHitRecord.Root;
                 hitRecord   = shapeHitRecord;
             }
         }

@@ -30,33 +30,46 @@ public class Program
                                         {
                                             new Sphere(material: new()
                                                                  {
-                                                                     MaterialColor = new Vector3(1.0f, 0.1f, 0.1f)
+                                                                     MaterialColor       = new Vector3(1.0f, 0.1f, 0.1f),
+                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     Smoothness          = 1.0f,
+                                                                     SpecularProbability = 0.05f
                                                                  },
                                                        center:   new(-2.2f, 0, -1.5f),
                                                        radius:   0.5f),
                                             new Sphere(material: new()
                                                                  {
-                                                                     MaterialColor = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     Smoothness    = 1.0f
+                                                                     MaterialColor       = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     Smoothness          = 1.0f,
+                                                                     SpecularProbability = 1.0f
                                                                  },
                                                        center:   new(-1.1f, 0, -1.5f),
                                                        radius:   0.5f),
                                             new Sphere(material: new()
                                                                  {
-                                                                     MaterialColor = new Vector3(0.1f, 1.0f, 0.1f),
+                                                                     MaterialColor       = new Vector3(0.1f, 1.0f, 0.1f),
+                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     Smoothness          = 0.5f,
+                                                                     SpecularProbability = 0.5f
                                                                  },
                                                        center:   new(0, 0, -1.5f),
                                                        radius:   0.5f),
                                             new Sphere(material: new()
                                                                  {
-                                                                     MaterialColor = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     Smoothness    = 1.0f
+                                                                     MaterialColor       = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     Smoothness          = 1.0f,
+                                                                     SpecularProbability = 0.3f
                                                                  },
                                                        center:   new(1.1f, 0, -1.5f),
                                                        radius:   0.5f),
                                             new Sphere(material: new()
                                                                  {
-                                                                     MaterialColor = new Vector3(0.1f, 0.1f, 1.0f)
+                                                                     MaterialColor       = new Vector3(0.1f, 0.1f, 1.0f),
+                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     Smoothness          = 0.2f,
+                                                                     SpecularProbability = 0.2f
                                                                  },
                                                        center:   new(2.2f, 0, -1.5f),
                                                        radius:   0.5f),

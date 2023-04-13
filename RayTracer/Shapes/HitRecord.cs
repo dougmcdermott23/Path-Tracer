@@ -8,6 +8,13 @@ public struct HitRecord
 {
     /// <summary>
     ///
+    ///     Shape that was hit.
+    ///
+    /// </summary>
+    public IShape Shape { get; init; }
+
+    /// <summary>
+    ///
     ///     Point that intersects with the ray and the shape.
     ///
     /// </summary>

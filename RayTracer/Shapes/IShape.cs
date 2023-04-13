@@ -11,7 +11,7 @@ public interface IShape
     ///     Material associated with the current shape.
     ///
     /// </summary>
-    public Material Material { get; set; }
+    Material Material { get; set; }
 
     /// <summary>
     ///
@@ -22,13 +22,13 @@ public interface IShape
     /// <param name="ray">The ray that could intersect with the shape</param>
     /// <param name="rootMin">Minimum allowable value for the root</param>
     /// <param name="rootMax">Maximum allowable value for the root</param>
-    /// <param name="hitRecord">A record containing hit information or null if there was no intersection</param>
+    /// <param name="hitRecord">A record containing hit information</param>
     ///
     /// <returns>If the ray intersects with the shape</returns>
-    public bool Hit(Ray ray,
-                    double rootMin,
-                    double rootMax,
-                    out HitRecord? hitRecord);
+    bool Hit(Ray ray,
+             double rootMin,
+             double rootMax,
+             out HitRecord hitRecord);
 
     /// <summary>
     ///

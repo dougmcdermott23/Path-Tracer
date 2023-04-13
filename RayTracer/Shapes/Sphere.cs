@@ -4,6 +4,8 @@ namespace RayTracer.Shapes;
 
 using Material;
 
+using static Constants;
+
 public class Sphere : IShape
 {
     /// <summary>
@@ -60,7 +62,7 @@ public class Sphere : IShape
     public bool Hit(Ray ray,
                     double rootMin,
                     double rootMax,
-                    out HitRecord? hitRecord)
+                    out HitRecord hitRecord)
     {
         var oc     = ray.Origin - Center;
         var a      = Vector3.Dot(ray.Direction, ray.Direction);
@@ -71,7 +73,7 @@ public class Sphere : IShape
 
         if (disciminant < 0)
         {
-            hitRecord = new();
+            hitRecord = EmptyHitRecord;
 
             return false;
         }
@@ -86,7 +88,7 @@ public class Sphere : IShape
 
             if (root < rootMin || root > rootMax)
             {
-                hitRecord = new();
+                hitRecord = EmptyHitRecord;
 
                 return false;
             }
@@ -98,6 +100,7 @@ public class Sphere : IShape
 
         hitRecord = new()
                     {
+                        Shape     = this,
                         Point     = point,
                         Normal    = frontFace ? normal : -normal,
                         Root      = root,

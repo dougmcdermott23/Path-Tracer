@@ -9,7 +9,7 @@ public class Program
     public static void Main(string[] args)
     {
         var aspectRatio = 16.0f / 9.0f;
-        var width       = 400;
+        var width       = 1920f;
         var height      = (int)(width / aspectRatio);
 
         var colorBuffer = new ColorBuffer(width, height);
@@ -28,69 +28,64 @@ public class Program
 
         var world = new ShapeCollection(new()
                                         {
-                                            new Sphere(material: new()
+                                            new Sphere(name:     "Transparent",
+                                                       material: new()
                                                                  {
-                                                                     MaterialColor       = new Vector3(1.0f, 0.1f, 0.1f),
-                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     Smoothness          = 1.0f,
-                                                                     SpecularProbability = 0.05f
+                                                                     MaterialColor        = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     Smoothness           = 1.0f,
+                                                                     IndexOfRefraction    = 1.4f,
+                                                                     ReflectiveConstant   = 0.0f
                                                                  },
-                                                       center:   new(-2.2f, 0, -1.5f),
-                                                       radius:   0.5f),
-                                            new Sphere(material: new()
+                                                       center:   new(1.0f, -0.1f, 1.0f),
+                                                       radius:   0.3f),
+                                            new Sphere(name:     "Mirror",
+                                                       material: new()
                                                                  {
-                                                                     MaterialColor       = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     Smoothness          = 1.0f,
-                                                                     SpecularProbability = 1.0f
+                                                                     MaterialColor        = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     Smoothness           = 1.0f,
+                                                                     ReflectiveConstant   = 1.0f
                                                                  },
-                                                       center:   new(-1.1f, 0, -1.5f),
+                                                       center:   new(-0.5f, 0.0f, -2.5f),
                                                        radius:   0.5f),
-                                            new Sphere(material: new()
+                                            new Sphere(name:     "Center-Right",
+                                                       material: new()
                                                                  {
-                                                                     MaterialColor       = new Vector3(0.1f, 1.0f, 0.1f),
-                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     Smoothness          = 0.5f,
-                                                                     SpecularProbability = 0.5f
-                                                                 },
-                                                       center:   new(0, 0, -1.5f),
-                                                       radius:   0.5f),
-                                            new Sphere(material: new()
-                                                                 {
-                                                                     MaterialColor       = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     Smoothness          = 1.0f,
-                                                                     SpecularProbability = 0.3f
+                                                                     MaterialColor        = new Vector3(1.0f, 0.1f, 0.1f),
+                                                                     Smoothness           = 0.0f,
+                                                                     ReflectiveConstant   = 1.0f
                                                                  },
                                                        center:   new(1.1f, 0, -1.5f),
                                                        radius:   0.5f),
-                                            new Sphere(material: new()
+                                            new Sphere(name:     "Right",
+                                                       material: new()
                                                                  {
                                                                      MaterialColor       = new Vector3(0.1f, 0.1f, 1.0f),
-                                                                     SpecularColor       = new Vector3(1.0f, 1.0f, 1.0f),
-                                                                     Smoothness          = 0.2f,
-                                                                     SpecularProbability = 0.2f
+                                                                     Smoothness          = 0.0f,
+                                                                     ReflectiveConstant  = 1.0f
                                                                  },
-                                                       center:   new(2.2f, 0, -1.5f),
+                                                       center:   new(2.2f, -0.02f, -1.5f),
                                                        radius:   0.5f),
-                                            new Sphere(material: new()
+                                            new Sphere(name:     "Ground",
+                                                       material: new()
                                                                  {
-                                                                     MaterialColor = new Vector3(0.95f, 0.95f, 0.95f)
+                                                                     MaterialColor      = new Vector3(0.95f, 0.95f, 0.95f),
+                                                                     ReflectiveConstant = 1.0f
                                                                  },
                                                        center:   new(0, -100.5f, -1.0f),
                                                        radius:   100.0f),
-                                            new Sphere(material: new()
+                                            new Sphere(name:     "Back-Light",
+                                                       material: new()
                                                                  {
                                                                      EmissionColor    = Vector3.One,
-                                                                     EmissionStrength = 2.0f
+                                                                     EmissionStrength = 1.0f
                                                                  },
-                                                       center:   new(-10.0f, 12.0f, 15.0f),
-                                                       radius:   10.0f),
+                                                       center:   new(-5.0f, 10.0f, 10.0f),
+                                                       radius:   10.0f)
                                         });
 
         var maxDepth = 5;
 
-        var samplesPerPixel = 100;
+        var samplesPerPixel = 1_000;
 
         var rayTracer = new RayTracer(camera,
                                       colorBuffer,

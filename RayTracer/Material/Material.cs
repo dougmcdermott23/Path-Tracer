@@ -14,13 +14,6 @@ public struct Material
 
     /// <summary>
     ///
-    ///     Controls the probability the specular component will be taken into account when calculating the new ray direction.
-    ///
-    /// </summary>
-    public Vector3 SpecularColor { get; init; }
-
-    /// <summary>
-    ///
     ///     Emission color of the material. If emission color is Vector3.Zero it does not emit any light.
     ///
     /// </summary>
@@ -36,11 +29,17 @@ public struct Material
 
     /// <summary>
     ///
-    ///     Controls the probability the specular component will be taken into account when calculating the new ray direction.
+    ///     Radius of sphere to randomize the direction of the reflected ray. The larger the radius, the fuzzier the reflection.
     ///
     /// </summary>
-    [Range(0.0f, 1.0f)]
-    public float SpecularProbability { get; init; }
+    public float Fuzziness { get; init; }
+
+    /// <summary>
+    ///
+    ///     Defines how much the path of light is refracted when entering the material.
+    ///
+    /// </summary>
+    public float IndexOfRefraction { get; init; }
 
     /// <summary>
     ///
@@ -48,4 +47,13 @@ public struct Material
     ///
     /// </summary>
     public float EmissionStrength { get; init; }
+
+    /// <summary>
+    ///
+    ///     Defines the proprtion of the color that is attributed due to reflection vs transmission.
+    ///     A shape with a constant 1.0f will only reflect while a shape with a constant of 0.0f will only refract.
+    ///
+    /// </summary>
+    [Range(0.0f, 1.0f)]
+    public float ReflectiveConstant { get; init; }
 }

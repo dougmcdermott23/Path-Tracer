@@ -5,6 +5,7 @@ using System.Numerics;
 namespace RayTracer;
 
 using Shapes;
+
 using static Constants;
 using static Utils.MathDM;
 using static Utils.VectorUtils;
@@ -155,17 +156,18 @@ public class RayTracer
             var u = (float)(x + RandomValue(ref state)) / ColorBuffer.Width;
             var v = (float)(y + RandomValue(ref state)) / ColorBuffer.Height;
 
-            var ray = Camera.GetRay(u, v);
-
-            var rayColor = Vector3.One;
-            var incomingLight = Vector3.Zero;
+            var ray                 = Camera.GetRay(u, v);
+            var initialContribution = 1.0f;
+            var rayColor            = Vector3.One;
+            var incomingLight       = Vector3.Zero;
 
             TraceRay(ray,
                      World,
                      MaxDepth,
-                     ref state,
-                     ref rayColor,
-                     ref incomingLight);
+                     initialContribution,
+                     rayColor,
+                     ref incomingLight,
+                     ref state);
 
             pixelColor += incomingLight;
         }
@@ -180,9 +182,10 @@ public class RayTracer
     private void TraceRay(Ray ray,
                           ShapeCollection shapeCollection,
                           int currentDepth,
-                          ref uint state,
-                          ref Vector3 rayColor,
-                          ref Vector3 incomingLight)
+                          float proportionalContribution,
+                          Vector3 rayColor,
+                          ref Vector3 incomingLight,
+                          ref uint state)
     {
         if (currentDepth <= 0)
         {
@@ -197,28 +200,122 @@ public class RayTracer
             return;
         }
 
-        var diffuseTarget  = hitRecord.Normal + CosineWeightedDistribution(ref state, hitRecord.Normal);
-        var specularTarget = Vector3.Reflect(ray.Direction, hitRecord.Normal);
+        Shade(ref rayColor,
+              ref incomingLight);
 
-        var isSpecularBounce = hitRecord.Material.SpecularProbability >= RandomValue(ref state);
+        ComputeReflected(rayColor,
+                         ref incomingLight,
+                         ref state);
 
-        var target = Vector3.Lerp(diffuseTarget,
-                                  specularTarget,
-                                  isSpecularBounce ? hitRecord.Material.Smoothness : 0);
+        ComputeTransmitted(rayColor,
+                           ref incomingLight,
+                           ref state);
 
-        var emittedLight = hitRecord.Material.EmissionColor * hitRecord.Material.EmissionStrength;
+        #region LocalMethod
 
-        incomingLight += emittedLight * rayColor;
-        rayColor      *= Vector3.Lerp(hitRecord.Material.MaterialColor,
-                                      hitRecord.Material.SpecularColor,
-                                      isSpecularBounce ? 1 : 0);
+        void Shade(ref Vector3 rayColor,
+                   ref Vector3 incomingLight)
+        {
+            var emittedLight = hitRecord.Material.EmissionColor * hitRecord.Material.EmissionStrength;
 
-        TraceRay(new Ray(hitRecord.Point, target),
-                 shapeCollection,
-                 currentDepth - 1,
-                 ref state,
-                 ref rayColor,
-                 ref incomingLight);
+            incomingLight += emittedLight * rayColor * proportionalContribution;
+            rayColor      *= hitRecord.Material.MaterialColor;
+        }
+
+        void ComputeReflected(Vector3 rayColor,
+                              ref Vector3 incomingLight,
+                              ref uint state)
+        {
+            if (hitRecord.Material.ReflectiveConstant == 0.0f)
+            {
+                return;
+            }
+
+            // This prevents reflections inside of objects.
+            // Reflections in objects should be handled by Fresnel in the transmissive ray.
+            if (!hitRecord.FrontFace)
+            {
+                return;
+            }
+
+            var diffuseTarget = hitRecord.Normal + CosineWeightedDistribution(ref state, hitRecord.Normal);
+
+            var specularPerturbation = hitRecord.Material.Fuzziness > 0
+                                           ? hitRecord.Material.Fuzziness * RandomInUnitSphere(ref state)
+                                           : Vector3.Zero;
+            var specularTarget       = Vector3.Reflect(ray.Direction, hitRecord.Normal);
+
+            // Due to specular perturbation the resulting specular target could be invalid.
+            // This avoids specular rays from going backwards.
+            specularTarget += Vector3.Dot(specularTarget, specularTarget + specularPerturbation) >= 0
+                                              ? specularPerturbation
+                                              : -1.0f * specularPerturbation;
+
+            var target = Vector3.Lerp(diffuseTarget,
+                                      specularTarget,
+                                      hitRecord.Material.Smoothness);
+
+            var reflectedContribution = proportionalContribution * hitRecord.Material.ReflectiveConstant;
+
+            TraceRay(new(hitRecord.Point, target),
+                     shapeCollection,
+                     currentDepth - 1,
+                     reflectedContribution,
+                     rayColor,
+                     ref incomingLight,
+                     ref state);
+        }
+
+        void ComputeTransmitted(Vector3 rayColor,
+                                ref Vector3 incomingLight,
+                                ref uint state)
+        {
+            if (hitRecord.Material.ReflectiveConstant == 1.0f)
+            {
+                return;
+            }
+
+            var refractionRatio = hitRecord.FrontFace
+                                      ? AirRefractiveIndex / hitRecord.Material.IndexOfRefraction
+                                      : hitRecord.Material.IndexOfRefraction;
+
+            // Snell's law
+            var cosTheta = MathF.Min(Vector3.Dot(-1 * ray.Direction, hitRecord.Normal), 1.0f);
+            var sinTheta = MathF.Sqrt(1.0f - cosTheta * cosTheta);
+
+            var canRefract = refractionRatio * sinTheta <= 1.0f;
+
+            var target = !canRefract || Reflectance(cosTheta, refractionRatio) > RandomValue(ref state)
+                             ? Vector3.Reflect(ray.Direction, hitRecord.Normal)
+                             : Refract(ray.Direction, hitRecord.Normal, refractionRatio);
+
+            var transmittedContribution = proportionalContribution * (1 - hitRecord.Material.ReflectiveConstant);
+
+            TraceRay(new(hitRecord.Point, target),
+                     shapeCollection,
+                     currentDepth - 1,
+                     transmittedContribution,
+                     rayColor,
+                     ref incomingLight,
+                     ref state);
+
+            #region Local Methods
+
+            // Schlick's approximation for reflectance
+            // Source: https://en.wikipedia.org/wiki/Schlick%27s_approximation#:~:text=In%203D%20computer%20graphics%2C%20Schlick's,(surface)%20between%20two%20media
+            float Reflectance(float cosTheta, float refractionRatio)
+            {
+                var rKnot = (1 - refractionRatio) / (1 + refractionRatio);
+
+                rKnot *= rKnot;
+
+                return rKnot + (1 - rKnot) * MathF.Pow((1 - cosTheta), 5);
+            }
+
+            #endregion
+        }
+
+        #endregion
     }
 
     private void LogProgress()

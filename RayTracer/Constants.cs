@@ -10,5 +10,7 @@ public static class Constants
 
     public const float SkinWidth           = 0.001f; // Set to a value > 0 to avoid self intersections
 
+    public const float AirRefractiveIndex  = 1.0f;
+
     public static HitRecord EmptyHitRecord = new();
 }

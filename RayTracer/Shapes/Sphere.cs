@@ -10,6 +10,13 @@ public class Sphere : IShape
 {
     /// <summary>
     ///
+    ///     Name of the sphere.
+    ///
+    /// </summary>
+    public string Name { get; set; }
+
+    /// <summary>
+    ///
     ///     Material associated with the sphere.
     ///
     /// </summary>
@@ -29,10 +36,12 @@ public class Sphere : IShape
     /// </summary>
     public float Radius { get; set; }
 
-    public Sphere(Material material,
+    public Sphere(string name,
+                  Material material,
                   Vector3 center,
                   float radius)
     {
+        Name     = name;
         Material = material;
         Center   = center;
         Radius   = radius;
@@ -79,7 +88,7 @@ public class Sphere : IShape
         }
 
         // find the nearest root that lies in the acceptable range
-        var sqrtDiscriminant = Math.Sqrt(disciminant);
+        var sqrtDiscriminant = MathF.Sqrt(disciminant);
         var root             = (-halfB - sqrtDiscriminant) / a;
 
         if (root < rootMin || root > rootMax)

@@ -83,4 +83,27 @@ public static class VectorUtils
 
         return Vector3.Normalize(new Vector3(randomX, randomY, randomZ));
     }
+
+    /// <summary>
+    ///
+    ///     Returns the refraction of a vector off a surface that has the specified normal and refraction ratio.
+    ///
+    /// </summary>
+    ///
+    /// <param name="vector">The source vector</param>
+    /// <param name="normal">The normal of the surface being reflected off</param>
+    /// <param name="normal">The ratio of refraction from the incoming to transmitted medium</param>
+    ///
+    /// <returns>The refracted vector</returns>
+    public static Vector3 Refract(Vector3 vector,
+                                  Vector3 normal,
+                                  float refractionRatio)
+    {
+        var cosTheta = Math.Min(Vector3.Dot(-1 * vector, normal), 1.0f);
+
+        var transmittedPerpendicular = refractionRatio * (vector + cosTheta * normal);
+        var transmittedParallel      = -1 * MathF.Sqrt(MathF.Abs(1.0f - transmittedPerpendicular.LengthSquared())) * normal;
+
+        return transmittedPerpendicular + transmittedParallel;
+    }
 }

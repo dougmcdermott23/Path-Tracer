@@ -185,7 +185,8 @@ public class RayTracer
                           float proportionalContribution,
                           Vector3 rayColor,
                           ref Vector3 incomingLight,
-                          ref uint state)
+                          ref uint state,
+                          bool applyBeers = false)
     {
         if (currentDepth <= 0)
         {
@@ -218,8 +219,24 @@ public class RayTracer
         {
             var emittedLight = hitRecord.Material.EmissionColor * hitRecord.Material.EmissionStrength;
 
+            // Beer's Law for light absorbtion through a material
+            // Source: https://en.wikipedia.org/wiki/Beer%E2%80%93Lambert_law
+            if (applyBeers)
+            {
+                var absorbance = -1.0f * (float)hitRecord.Root * hitRecord.Material.Absorbance * hitRecord.Material.AbsorbanceColor;
+
+                rayColor *= new Vector3(MathF.Exp(absorbance.X),
+                                        MathF.Exp(absorbance.Y),
+                                        MathF.Exp(absorbance.Z));
+            }
+
             incomingLight += emittedLight * rayColor * proportionalContribution;
-            rayColor      *= hitRecord.Material.MaterialColor;
+
+            // We are not applying Beer's law, update the ray color using the color of the reflected shapes surface
+            if (!applyBeers)
+            {
+                rayColor *= hitRecord.Material.MaterialColor;
+            }
         }
 
         void ComputeReflected(Vector3 rayColor,
@@ -257,13 +274,15 @@ public class RayTracer
 
             var reflectedContribution = proportionalContribution * hitRecord.Material.ReflectiveConstant;
 
+            // We only apply Beer's Law to calculate the ray color if we are inside an object that can transmit light
             TraceRay(new(hitRecord.Point, target),
                      shapeCollection,
                      currentDepth - 1,
                      reflectedContribution,
                      rayColor,
                      ref incomingLight,
-                     ref state);
+                     ref state,
+                     applyBeers: applyBeers);
         }
 
         void ComputeTransmitted(Vector3 rayColor,
@@ -291,13 +310,15 @@ public class RayTracer
 
             var transmittedContribution = proportionalContribution * (1 - hitRecord.Material.ReflectiveConstant);
 
+            // We only apply Beer's Law to calculate the ray color if we are inside an object that can transmit light
             TraceRay(new(hitRecord.Point, target),
                      shapeCollection,
                      currentDepth - 1,
                      transmittedContribution,
                      rayColor,
                      ref incomingLight,
-                     ref state);
+                     ref state,
+                     applyBeers: !applyBeers);
 
             #region Local Methods
 

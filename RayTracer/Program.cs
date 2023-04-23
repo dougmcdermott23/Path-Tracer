@@ -9,7 +9,7 @@ public class Program
     public static void Main(string[] args)
     {
         var aspectRatio = 16.0f / 9.0f;
-        var width       = 1920f;
+        var width       = 1920;
         var height      = (int)(width / aspectRatio);
 
         var colorBuffer = new ColorBuffer(width, height);
@@ -31,13 +31,14 @@ public class Program
                                             new Sphere(name:     "Transparent",
                                                        material: new()
                                                                  {
-                                                                     MaterialColor        = new Vector3(1.0f, 1.0f, 1.0f),
+                                                                     MaterialColor        = new Vector3(0.9f, 0.9f, 0.9f),
                                                                      Smoothness           = 1.0f,
                                                                      IndexOfRefraction    = 1.4f,
-                                                                     ReflectiveConstant   = 0.0f
+                                                                     ReflectiveConstant   = 0.0f,
+                                                                     Absorbance           = 8.0f,
                                                                  },
                                                        center:   new(1.0f, -0.1f, 1.0f),
-                                                       radius:   0.3f),
+                                                       radius:   0.4f),
                                             new Sphere(name:     "Mirror",
                                                        material: new()
                                                                  {

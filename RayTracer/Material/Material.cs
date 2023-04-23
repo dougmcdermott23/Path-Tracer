@@ -21,6 +21,13 @@ public struct Material
 
     /// <summary>
     ///
+    ///     Fraction of light that is absorbed by the material as light transmitts through the object.
+    ///
+    /// </summary>
+    public Vector3 AbsorbanceColor => Vector3.One - MaterialColor;
+
+    /// <summary>
+    ///
     ///     Controls the proportion of the reflection that is diffuse vs specular. An object with smoothness 1.0f is a perfect mirror.
     ///
     /// </summary>
@@ -56,4 +63,11 @@ public struct Material
     /// </summary>
     [Range(0.0f, 1.0f)]
     public float ReflectiveConstant { get; init; }
+
+    /// <summary>
+    ///
+    ///     Fraction of light that is absorbed by the material as light transmitts through the object.
+    ///
+    /// </summary>
+    public float Absorbance { get; init; }
 }

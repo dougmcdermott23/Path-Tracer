@@ -2,17 +2,21 @@
 
 namespace RayTracer;
 
+using static Utils.VectorUtils;
+
 public class Camera
 {
-    public float ViewportHeight { get; }
+    private float ViewportHeight { get; }
 
-    public float ViewportWidth { get; }
+    private float ViewportWidth { get; }
 
-    public float FocalLength { get; }
+    private float FocalLength { get; }
 
-    public Vector3 Origin { get; }
+    private float DefocusStrength { get; }
 
-    public Vector3 LookDirection { get; }
+    private Vector3 Origin { get; }
+
+    private Vector3 LookDirection { get; }
 
     public Vector3 CameraRight { get; }
 
@@ -33,14 +37,16 @@ public class Camera
     public Camera(float viewportHeight,
                   float viewportWidth,
                   float focalLength,
+                  float defocusStrength,
                   Vector3 origin,
                   Vector3 lookDirection)
     {
-        ViewportHeight = viewportHeight;
-        ViewportWidth  = viewportWidth;
-        FocalLength    = focalLength;
-        Origin         = origin;
-        LookDirection  = Vector3.Normalize(lookDirection);
+        ViewportHeight  = viewportHeight;
+        ViewportWidth   = viewportWidth;
+        FocalLength     = focalLength;
+        DefocusStrength = defocusStrength;
+        Origin          = origin;
+        LookDirection   = Vector3.Normalize(lookDirection);
 
         CameraRight = Vector3.Cross(lookDirection, Vector3.UnitY);
         CameraUp    = Vector3.Cross(CameraRight, lookDirection);
@@ -60,12 +66,16 @@ public class Camera
     /// <param name="v">Vertical coordinate on viewport between 0 and 1</param>
     ///
     /// <returns>Ray at origin passing through u, v on viewport</returns>
-    public Ray GetRay(float u, float v)
+    public Ray GetRay(float u, float v, ref uint state)
     {
+        var defocusJitter = RandomInUnitCircle(ref state) * DefocusStrength / ViewportWidth;
+
+        var rayOrigin = Origin + CameraRight * defocusJitter.X + CameraUp * defocusJitter.Y;
+
         var rayTarget = BotLeftViewport + u * ViewportWidth * CameraRight + v * ViewportHeight * CameraUp;
 
-        var rayDirection = rayTarget - Origin;
+        var rayDirection = rayTarget - rayOrigin;
 
-        return new(Origin, rayDirection);
+        return new(rayOrigin, rayDirection);
     }
 }

@@ -10,13 +10,6 @@ public class Sphere : IShape
 {
     /// <summary>
     ///
-    ///     Name of the sphere.
-    ///
-    /// </summary>
-    public string Name { get; set; }
-
-    /// <summary>
-    ///
     ///     Material associated with the sphere.
     ///
     /// </summary>
@@ -36,12 +29,10 @@ public class Sphere : IShape
     /// </summary>
     public float Radius { get; set; }
 
-    public Sphere(string name,
-                  Material material,
+    public Sphere(Material material,
                   Vector3 center,
                   float radius)
     {
-        Name     = name;
         Material = material;
         Center   = center;
         Radius   = radius;

@@ -8,13 +8,6 @@ public interface IShape
 {
     /// <summary>
     ///
-    ///     Name of the shape
-    ///
-    /// </summary>
-    string Name { get; set; }
-
-    /// <summary>
-    ///
     ///     Material associated with the current shape.
     ///
     /// </summary>

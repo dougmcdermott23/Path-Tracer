@@ -86,6 +86,24 @@ public static class VectorUtils
 
     /// <summary>
     ///
+    ///     Randomly select a point in the unit circle.
+    ///
+    /// </summary>
+    ///
+    /// <param name="state">Random number seed</param>
+    ///
+    /// <returns>A point in the unit circle</returns>
+    public static Vector2 RandomInUnitCircle(ref uint state)
+    {
+        var angle = RandomValue(ref state) * 2 * MathF.PI;
+
+        var pointOnCircle = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
+
+        return pointOnCircle * MathF.Sqrt(RandomValue(ref state));
+    }
+
+    /// <summary>
+    ///
     ///     Returns the refraction of a vector off a surface that has the specified normal and refraction ratio.
     ///
     /// </summary>
@@ -106,4 +124,16 @@ public static class VectorUtils
 
         return transmittedPerpendicular + transmittedParallel;
     }
+
+    /// <summary>
+    ///
+    ///     Randomize a 3D vector with values in range of 0 to 1
+    ///
+    /// </summary>
+    ///
+    /// <param name="state">Random number seed</param>
+    ///
+    /// <returns>A random 3D vector</returns>
+    public static Vector3 RandomVector(ref uint state)
+        => new Vector3(RandomValue(ref state), RandomValue(ref state), RandomValue(ref state));
 }

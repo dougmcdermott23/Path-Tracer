@@ -1,6 +1,8 @@
-﻿using RayTracer.Shapes;
+﻿using System.Numerics;
 
 namespace RayTracer;
+
+using Shapes;
 
 public static class Constants
 {
@@ -12,5 +14,9 @@ public static class Constants
 
     public const float AirRefractiveIndex  = 1.0f;
 
-    public static HitRecord EmptyHitRecord = new();
+    public static readonly HitRecord EmptyHitRecord = new();
+
+    public static readonly Vector3 DefaultSkyboxMin = Vector3.One;
+
+    public static readonly Vector3 DefaultSkyboxMax = new(0.5f, 0.7f, 1.0f);
 }

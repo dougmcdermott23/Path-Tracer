@@ -24,6 +24,8 @@ public class RayTracer
 
     private int ConcurrencyLimit { get; }
 
+    private bool UseSkybox { get; }
+
     private Semaphore Semaphore { get; }
 
     private WaitHandle[] WaitHandles { get; }
@@ -39,7 +41,8 @@ public class RayTracer
                      ShapeCollection world,
                      int maxDepth,
                      int samplesPerPixel,
-                     int concurrencyLimit)
+                     int concurrencyLimit,
+                     bool useSkybox = false)
     {
         Camera           = camera;
         ColorBuffer      = colorBuffer;
@@ -47,6 +50,7 @@ public class RayTracer
         MaxDepth         = maxDepth;
         SamplesPerPixel  = samplesPerPixel;
         ConcurrencyLimit = concurrencyLimit;
+        UseSkybox        = useSkybox;
 
         Semaphore   = new(ConcurrencyLimit, ConcurrencyLimit);
         WaitHandles = new WaitHandle[]
@@ -156,7 +160,7 @@ public class RayTracer
             var u = (float)(x + RandomValue(ref state)) / ColorBuffer.Width;
             var v = (float)(y + RandomValue(ref state)) / ColorBuffer.Height;
 
-            var ray                 = Camera.GetRay(u, v);
+            var ray                 = Camera.GetRay(u, v, ref state);
             var initialContribution = 1.0f;
             var rayColor            = Vector3.One;
             var incomingLight       = Vector3.Zero;
@@ -198,6 +202,9 @@ public class RayTracer
                                             MaximumRoot,
                                             out var hitRecord))
         {
+            Skybox(ref rayColor,
+                   ref incomingLight);
+
             return;
         }
 
@@ -213,6 +220,23 @@ public class RayTracer
                            ref state);
 
         #region LocalMethod
+
+        void Skybox(ref Vector3 rayColor,
+                    ref Vector3 incomingLight)
+        {
+            if (!UseSkybox)
+            {
+                return;
+            }
+
+            var t = 0.5f * (ray.Direction.Y + 1.0f);
+
+            var skyColor = Vector3.Lerp(DefaultSkyboxMin,
+                                        DefaultSkyboxMax,
+                                        t);
+
+            incomingLight += skyColor * rayColor * proportionalContribution;
+        }
 
         void Shade(ref Vector3 rayColor,
                    ref Vector3 incomingLight)

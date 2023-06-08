@@ -22,15 +22,9 @@ public class RayTracer
 
     private int SamplesPerPixel { get; }
 
-    private int ConcurrencyLimit { get; }
-
     private bool UseSkybox { get; }
 
-    private Semaphore Semaphore { get; }
-
-    private WaitHandle[] WaitHandles { get; }
-
-    private SynchronizedCollection<Task> TaskList { get; } = new();
+    private ParallelOptions ParallelOptions { get; }
 
     private CancellationTokenSource CancellationTokenSource { get; } = new();
 
@@ -49,15 +43,13 @@ public class RayTracer
         World            = world;
         MaxDepth         = maxDepth;
         SamplesPerPixel  = samplesPerPixel;
-        ConcurrencyLimit = concurrencyLimit;
         UseSkybox        = useSkybox;
 
-        Semaphore   = new(ConcurrencyLimit, ConcurrencyLimit);
-        WaitHandles = new WaitHandle[]
-                      {
-                          CancellationTokenSource.Token.WaitHandle,
-                          Semaphore
-                      };
+        ParallelOptions = new()
+                          {
+                              CancellationToken = CancellationTokenSource.Token,
+                              MaxDegreeOfParallelism = concurrencyLimit
+                          };
     }
 
     /// <summary>
@@ -69,53 +61,20 @@ public class RayTracer
     /// <exception cref="TaskCanceledException">Ray tracer was cancelled before all pixels were processed</exception>
     public void Run()
     {
-        foreach (var coord in EnumerateImagePlane())
-        {
-            var startTask   = new ManualResetEvent(false);
-            var taskStarted = new ManualResetEvent(false);
+        Parallel.ForEach(EnumerateImagePlane(), (coord) => {
+                                                               try
+                                                               {
+                                                                   ProcessPixel(coord.X, coord.Y);
 
-            WaitHandle.WaitAny(WaitHandles);
+                                                                   LogProgress();
+                                                               }
+                                                               catch (Exception e)
+                                                               {
+                                                                   CancellationTokenSource.Cancel();
 
-            if (!CancellationTokenSource.IsCancellationRequested)
-            {
-                var task = Task.Run(() =>
-                                    {
-                                        startTask.WaitOne();
-                                        taskStarted.Set();
-
-                                        try
-                                        {
-                                            ProcessPixel(coord.X, coord.Y);
-                                            LogProgress();
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            CancellationTokenSource.Cancel();
-                                            taskStarted.Set();
-
-                                            Console.WriteLine(e);
-                                        }
-                                        finally
-                                        {
-                                            Semaphore.Release();
-                                            taskStarted.Set();
-                                        }
-                                    },
-                                    CancellationTokenSource.Token);
-
-                task.ContinueWith(t => TaskList.Remove(t));
-
-                TaskList.Add(task);
-                startTask.Set();
-                taskStarted.WaitOne();
-            }
-            else
-            {
-                throw new TaskCanceledException("All tasks are cancelled due to a cancellation token request.");
-            }
-        }
-
-        WaitForAllTasks();
+                                                                   Console.WriteLine(e);
+                                                               }
+                                                           });
 
         var bitmap = CreateBitmap();
 
@@ -131,18 +90,6 @@ public class RayTracer
                 {
                     yield return (x, y);
                 }
-            }
-        }
-
-        void WaitForAllTasks()
-        {
-            try
-            {
-                Task.WaitAll(TaskList.ToList().Where(t => t is not null).ToArray());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
             }
         }
 
